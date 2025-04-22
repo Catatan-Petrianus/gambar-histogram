@@ -35,7 +35,7 @@ def render_histogram(coords):
 \\usepackage{pxfonts}
 
 \\usepackage{pgfplots}
-\\pgfplotsset{width=10cm,compat=1.16}
+\\pgfplotsset{{width=10cm,compat=1.16}}
 
 \\begin{{document}}
 \\begin{{tikzpicture}}
