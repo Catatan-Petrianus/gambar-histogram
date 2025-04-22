@@ -1,2 +1,12 @@
+# Core XeLaTeX engine
 texlive-xetex
+
+# Common LaTeX packages (font handling, graphics, math, etc.)
+texlive-latex-recommended
+texlive-latex-extra
+texlive-fonts-recommended
+texlive-fonts-extra
+texlive-pictures
+
+# ImageMagick for PDF→PNG conversion
 imagemagick
