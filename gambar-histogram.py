@@ -27,14 +27,14 @@ def render_histogram(coords):
     xticks = ", ".join(str(x) for x, _ in coords)
     yticks = ", ".join(sorted({str(int(y)) for _, y in coords}, key=lambda v: int(v)))
     tex = f"""
-\\documentclass[border=5mm,tikz,preview]{standalone}
-\\usepackage[margin=0.5in]{geometry}
+\\documentclass[border=5mm,tikz,preview]{{standalone}}
+\\usepackage[margin=0.5in]{{geometry}}
 
 % Use TeX‑native fonts to avoid fontspec errors:
-\\usepackage{mathpazo}
-\\usepackage{pxfonts}
+\\usepackage{{mathpazo}}
+\\usepackage{{pxfonts}}
 
-\\usepackage{pgfplots}
+\\usepackage{{pgfplots}}
 \\pgfplotsset{{width=10cm,compat=1.16}}
 
 \\begin{{document}}
