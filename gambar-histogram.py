@@ -1,37 +1,52 @@
 import streamlit as st
-import requests
+import subprocess
+import tempfile
+import os
+from PIL import Image
 
-st.title("🌐 TikZ Renderer (via QuickLaTeX API)")
+st.title("🎨 Live TikZ LaTeX Renderer")
 
-tikz_code = st.text_area("Enter TikZ code", height=200, value=r"""
+st.markdown("""
+Type your TikZ code below (without the `\\begin{tikzpicture}` wrapper) and see it rendered.
+Make sure you have `pdflatex` and `convert` (ImageMagick) installed.
+""")
+
+tikz_code = st.text_area("TikZ Code", height=200, value=r"""
 \draw[thick,->] (0,0) -- (2,2);
 \draw[red] (0,0) circle (1cm);
 """)
 
-if st.button("Render via QuickLaTeX"):
-    latex_template = r"""
-\documentclass[preview]{standalone}
+if tikz_code.strip() == "":
+    st.stop()
+
+full_latex = r"""
+\documentclass[tikz]{standalone}
 \usepackage{tikz}
 \begin{document}
 \begin{tikzpicture}
-%s
+""" + tikz_code + r"""
 \end{tikzpicture}
 \end{document}
-""" % tikz_code
+"""
 
-    payload = {
-        'formula': latex_template,
-        'fsize': '12px',
-        'fcolor': '000000',
-        'mode': '0',
-        'out': '1',
-        'errors': '1'
-    }
+if st.button("Render TikZ"):
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tex_path = os.path.join(tmpdir, "tikz.tex")
+        pdf_path = os.path.join(tmpdir, "tikz.pdf")
+        png_path = os.path.join(tmpdir, "tikz.png")
 
-    response = requests.post("https://quicklatex.com/latex3.f", data=payload)
+        with open(tex_path, "w") as f:
+            f.write(full_latex)
 
-    if response.ok and 'https://quicklatex.com/cache3' in response.text:
-        image_url = response.text.split()[1]
-        st.image(image_url, caption="Rendered TikZ")
-    else:
-        st.error("Rendering failed. Try again or check your TikZ code.")
+        try:
+            subprocess.run(["pdflatex", "-interaction=nonstopmode", tex_path], cwd=tmpdir, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+            # Convert PDF to PNG (you need `convert` from ImageMagick)
+            subprocess.run(["convert", "-density", "300", pdf_path, "-quality", "90", png_path], check=True)
+
+            image = Image.open(png_path)
+            st.image(image, caption="Rendered TikZ", use_column_width=True)
+
+        except subprocess.CalledProcessError as e:
+            st.error("Error rendering LaTeX or converting image.")
+            st.text(e.stderr.decode())
