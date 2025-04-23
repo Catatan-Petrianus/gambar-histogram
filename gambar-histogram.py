@@ -1,52 +1,56 @@
 import streamlit as st
-import subprocess
-import tempfile
-import os
-from PIL import Image
 
-st.title("🎨 Live TikZ LaTeX Renderer")
+st.set_page_config(page_title="TikZJax SVG Saver", layout="centered")
+
+st.title("📐 TikZ Diagram Renderer + SVG Saver")
 
 st.markdown("""
-Type your TikZ code below (without the `\\begin{tikzpicture}` wrapper) and see it rendered.
-Make sure you have `pdflatex` and `convert` (ImageMagick) installed.
+Enter your **TikZ code** below. Click **Render** to see the diagram, or **Save as SVG** to download it!
 """)
 
-tikz_code = st.text_area("TikZ Code", height=200, value=r"""
-\draw[thick,->] (0,0) -- (2,2);
-\draw[red] (0,0) circle (1cm);
-""")
-
-if tikz_code.strip() == "":
-    st.stop()
-
-full_latex = r"""
-\documentclass[tikz]{standalone}
-\usepackage{tikz}
-\begin{document}
+default_tikz = r"""
 \begin{tikzpicture}
-""" + tikz_code + r"""
+  \draw[->, thick] (0,0) -- (2,0) node[right] {x};
+  \draw[->, thick] (0,0) -- (0,2) node[above] {y};
+  \draw (0,0) circle (1);
+  \draw[red, thick] (0,0) -- (1,1) node[right] {r};
 \end{tikzpicture}
-\end{document}
 """
 
-if st.button("Render TikZ"):
-    with tempfile.TemporaryDirectory() as tmpdir:
-        tex_path = os.path.join(tmpdir, "tikz.tex")
-        pdf_path = os.path.join(tmpdir, "tikz.pdf")
-        png_path = os.path.join(tmpdir, "tikz.png")
+tikz_code = st.text_area("Enter TikZ code here:", value=default_tikz, height=200)
 
-        with open(tex_path, "w") as f:
-            f.write(full_latex)
+# HTML with TikZJax and Save button
+html = f"""
+<script src="https://tikzjax.com/v1/tikzjax.js"></script>
 
-        try:
-            subprocess.run(["pdflatex", "-interaction=nonstopmode", tex_path], cwd=tmpdir, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+<pre><code id="tikz-code" type="text/tikz">
+{tikz_code}
+</code></pre>
 
-            # Convert PDF to PNG (you need `convert` from ImageMagick)
-            subprocess.run(["convert", "-density", "300", pdf_path, "-quality", "90", png_path], check=True)
+<br>
+<button onclick="downloadSVG()">💾 Save as SVG</button>
 
-            image = Image.open(png_path)
-            st.image(image, caption="Rendered TikZ", use_column_width=True)
+<script>
+function downloadSVG() {{
+    const svgEl = document.querySelector("svg");
+    if (!svgEl) {{
+        alert("SVG not yet rendered!");
+        return;
+    }}
+    const serializer = new XMLSerializer();
+    const source = serializer.serializeToString(svgEl);
+    const blob = new Blob([source], {{type: "image/svg+xml;charset=utf-8"}});
+    const url = URL.createObjectURL(blob);
 
-        except subprocess.CalledProcessError as e:
-            st.error("Error rendering LaTeX or converting image.")
-            st.text(e.stderr.decode())
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "diagram.svg";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}}
+</script>
+"""
+
+st.components.v1.html(html, height=500)
